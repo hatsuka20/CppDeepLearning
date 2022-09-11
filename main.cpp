@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <vector>
+#include "tensor.hpp"
 
 class Layer
 {
@@ -26,6 +28,7 @@ public:
 
 int main()
 {
+    auto tensor = Tensor<float>{3, 2, 4};
     auto layer = DenseLayer();
     layer.Forward();
     layer.Backward();

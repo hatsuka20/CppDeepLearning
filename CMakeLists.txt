@@ -26,4 +26,11 @@ endif()
 
 project(CppDeeplearning CXX)
 
+add_subdirectory(lib)
+
 add_executable(main main.cpp)
+target_include_directories(main PUBLIC ${PROJECT_SOURCE_DIR}/lib)
+target_link_libraries(main CppDeepLearning)
+
+enable_testing()
+add_subdirectory(test)
