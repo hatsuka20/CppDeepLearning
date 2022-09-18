@@ -35,7 +35,10 @@ namespace autograd
             std::cout << "Add consturctor" << std::endl;
         }
 
-        [[nodiscard]] T Forward() const override { return T{static_cast<float>(term1_) + static_cast<float>(term2_)}; }
+        [[nodiscard]] T Forward() const override
+        {
+            return T{static_cast<typename T::RawValueType>(term1_) + static_cast<typename T::RawValueType>(term2_)};
+        }
 
         void Backward(const T& d_l) const override {}
     };
@@ -47,21 +50,25 @@ namespace autograd
         const float x;
 
     public:
+        using RawValueType = float;
+        explicit operator RawValueType() const noexcept { return x; }
+
         explicit Float32(float src) : backward_type_(std::move(Terminal<Float32>())), x(src)
         {
             std::cout << "Normal Float32 consturctor" << std::endl;
         }
+
         Float32(const Float32& src) : backward_type_(std::move(Terminal<Float32>())), x(src.x)
         {
             std::cout << "const ref Float32 consturctor" << std::endl;
         }
+
         explicit Float32(const Operand<Float32>& op) : backward_type_(op), x(backward_type_.Forward().x)
         {
             std::cout << "const ref Operand consturctor" << std::endl;
         }
-        ~Float32() = default;
 
-        explicit operator float() const noexcept { return x; }
+        ~Float32() = default;
 
         friend std::ostream& operator<<(std::ostream& ofs, const Float32& src)
         {
