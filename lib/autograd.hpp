@@ -37,7 +37,7 @@ namespace autograd
 
         [[nodiscard]] T Forward() const override { return T{static_cast<float>(term1_) + static_cast<float>(term2_)}; }
 
-        void Backward(const T& dL) const override {}
+        void Backward(const T& d_l) const override {}
     };
 
     class Float32

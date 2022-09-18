@@ -1,7 +1,7 @@
 ---
-Checks:          '-*,google-*,modernize-*,performance-*,portability-*,readability-*,clang-diagnostic-*,clang-analyzer-*,-modernize-pass-by-value,-modernize-use-trailing-return-type,-google-readability-braces-around-statements,-readability-named-parameter,-readability-braces-around-statements,-readability-redundant-declaration'
+Checks:          '-*,google-*,modernize-*,performance-*,portability-*,readability-*,clang-diagnostic-*,clang-analyzer-*,-modernize-pass-by-value,-modernize-use-trailing-return-type,-google-readability-braces-around-statements,-readability-named-parameter,-readability-braces-around-statements,-readability-redundant-declaration, -readability-magic-numbers, -google-readability-todo'
 WarningsAsErrors: ''
-HeaderFilterRegex: '^(?!.*external).*'
+HeaderFilterRegex:  '^(?!.*externals).*'
 AnalyzeTemporaryDtors: false
 FormatStyle:     file
 CheckOptions:
