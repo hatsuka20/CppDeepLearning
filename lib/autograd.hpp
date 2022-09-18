@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <memory>
+#include "debug.hpp"
 #include "nameof.hpp"
 
 namespace autograd
@@ -22,10 +23,7 @@ namespace autograd
         const T& term2_;
 
     public:
-        explicit Add(const T& src1, const T& src2) : term1_(src1), term2_(src2)
-        {
-            std::cout << "Add consturctor" << std::endl;
-        }
+        explicit Add(const T& src1, const T& src2) : term1_(src1), term2_(src2) { debug_print("Add consturctor"); }
 
         [[nodiscard]] T Forward() const override
         {
@@ -48,21 +46,21 @@ namespace autograd
     public:
         explicit Float32(float src) : backward_type_(nullptr), x_(src)
         {
-            std::cout << "Normal Float32 consturctor" << std::endl;
+            debug_print("Float32(float src) consturctor");
         }
 
         Float32(const Float32& src) : backward_type_(src.backward_type_), x_(src.x_)
         {
-            std::cout << "const ref Float32 consturctor" << std::endl;
+            debug_print("Float32(const Float32& src) consturctor");
         }
 
         explicit Float32(const std::shared_ptr<Operand<Float32>>& op)
             : backward_type_(op), x_(backward_type_->Forward().x_)
         {
-            std::cout << "const ref Operand consturctor" << std::endl;
+            debug_print("Float32(Operand<Float32>* op) consturctor");
         }
 
-        ~Float32() = default;
+        ~Float32() { debug_print("Float32 destructor"); };
 
         friend auto operator<<(std::ostream& ofs, const Float32& src) -> decltype(ofs)
         {
