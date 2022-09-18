@@ -1,4 +1,7 @@
+#pragma once
+
 #include <iostream>
+#include <memory>
 #include "nameof.hpp"
 
 namespace autograd
@@ -9,17 +12,6 @@ namespace autograd
     public:
         [[nodiscard]] virtual T Forward() const = 0;
         virtual void Backward(const T&) const = 0;
-    };
-
-    template <class T>
-    class Terminal : public Operand<T>
-    {
-        [[nodiscard]] T Forward() const override
-        {
-            std::cout << "Terminal consturctor" << std::endl;
-            return T{0};
-        }
-        void Backward(const T&) const override {}
     };
 
     template <class T>
@@ -45,41 +37,49 @@ namespace autograd
 
     class Float32
     {
-    private:
-        const Operand<Float32>& backward_type_;
-        const float x;
-
     public:
         using RawValueType = float;
-        explicit operator RawValueType() const noexcept { return x; }
+        explicit operator RawValueType() const noexcept { return x_; }
 
-        explicit Float32(float src) : backward_type_(std::move(Terminal<Float32>())), x(src)
+    private:
+        std::shared_ptr<Operand<Float32>> backward_type_;
+        RawValueType x_;
+
+    public:
+        explicit Float32(float src) : backward_type_(nullptr), x_(src)
         {
             std::cout << "Normal Float32 consturctor" << std::endl;
         }
 
-        Float32(const Float32& src) : backward_type_(std::move(Terminal<Float32>())), x(src.x)
+        Float32(const Float32& src) : backward_type_(src.backward_type_), x_(src.x_)
         {
             std::cout << "const ref Float32 consturctor" << std::endl;
         }
 
-        explicit Float32(const Operand<Float32>& op) : backward_type_(op), x(backward_type_.Forward().x)
+        explicit Float32(const std::shared_ptr<Operand<Float32>>& op)
+            : backward_type_(op), x_(backward_type_->Forward().x_)
         {
             std::cout << "const ref Operand consturctor" << std::endl;
         }
 
         ~Float32() = default;
 
-        friend std::ostream& operator<<(std::ostream& ofs, const Float32& src)
+        friend auto operator<<(std::ostream& ofs, const Float32& src) -> decltype(ofs)
         {
-            ofs << src.x << " (Float32, backward=" << NAMEOF_SHORT_TYPE_RTTI(src.backward_type_) << ")";
+            auto& temp = *src.backward_type_;
+            ofs << src.x_
+                << " (Float32, backward=" << ((src.backward_type_ == nullptr) ? "None" : NAMEOF_SHORT_TYPE_RTTI(temp))
+                << ")";
             return ofs;
         }
+
+        [[nodiscard]] auto Detach() const { return Float32{x_}; }
+        [[nodiscard]] auto Clone() const { return Float32{*this}; }
     };
 
     template <class T>
     auto operator+(const T& a, const T& b)
     {
-        return T{Add(a, b)};
+        return T{std::make_shared<Add<T>>(a, b)};
     }
 };  // namespace autograd
