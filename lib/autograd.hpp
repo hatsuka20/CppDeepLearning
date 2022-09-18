@@ -33,6 +33,24 @@ namespace autograd
         void Backward(const T& d_l) const override {}
     };
 
+    template <class T>
+    class Mul : public Operand<T>
+    {
+    private:
+        const T& term1_;
+        const T& term2_;
+
+    public:
+        explicit Mul(const T& src1, const T& src2) : term1_(src1), term2_(src2) { debug_print("Mul consturctor"); }
+
+        [[nodiscard]] T Forward() const override
+        {
+            return T{static_cast<typename T::RawValueType>(term1_) * static_cast<typename T::RawValueType>(term2_)};
+        }
+
+        void Backward(const T& d_l) const override {}
+    };
+
     class Float32
     {
     public:
@@ -79,5 +97,11 @@ namespace autograd
     auto operator+(const T& a, const T& b)
     {
         return T{std::make_shared<Add<T>>(a, b)};
+    }
+
+    template <class T>
+    auto operator*(const T& a, const T& b)
+    {
+        return T{std::make_shared<Mul<T>>(a, b)};
     }
 };  // namespace autograd

@@ -33,7 +33,7 @@ int main()
     auto a = autograd::Float32{1.0};
     auto b = autograd::Float32{2.0};
     auto c = autograd::Float32{3.0};
-    auto x = a + b + c;
+    auto x = a + b * c;
 
     std::cout << a << std::endl;
     std::cout << b << std::endl;
