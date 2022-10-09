@@ -2,106 +2,154 @@
 
 #include <iostream>
 #include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 #include "debug.hpp"
-#include "nameof.hpp"
 
 namespace autograd
 {
-    template <class T>
-    class Operand
+    namespace backprop
     {
-    public:
-        [[nodiscard]] virtual T Forward() const = 0;
-        virtual void Backward(const T&) const = 0;
-    };
-
-    template <class T>
-    class Add : public Operand<T>
-    {
-    private:
-        const T& term1_;
-        const T& term2_;
-
-    public:
-        explicit Add(const T& src1, const T& src2) : term1_(src1), term2_(src2) { debug_print("Add consturctor"); }
-
-        [[nodiscard]] T Forward() const override
+        class Float32
         {
-            return T{static_cast<typename T::RawValueType>(term1_) + static_cast<typename T::RawValueType>(term2_)};
+        public:
+            using ElementType = float;
+            using GradType = float;
+            explicit operator ElementType() const { return x_; }
+
+        private:
+            ElementType x_;
+            mutable std::optional<GradType> d_;
+            mutable std::string last_calculate_ = "Leaf";
+            mutable std::vector<std::pair<std::reference_wrapper<const Float32>, GradType>> children_;
+
+            void Backward(const GradType& dl) const
+            {
+                d_ = d_ ? d_.value() + dl : dl;
+                for (const auto& c : children_)
+                {
+                    c.first.get().Backward(d_.value() * c.second);
+                }
+            }
+
+        public:
+            Float32() = delete;
+            explicit Float32(const ElementType& x) : x_(x) {}
+            Float32(const ElementType& x, const std::string& last_calculate) : x_(x), last_calculate_(last_calculate) {}
+            Float32(const Float32& src) = default;
+            Float32(Float32&& src) noexcept
+                : x_(src.x_),
+                  d_(src.d_),
+                  last_calculate_(std::move(src.last_calculate_)),
+                  children_(std::move(src.children_))
+            {
+            }
+            ~Float32() = default;
+
+            void AddChild(const Float32& src, const GradType& d) const { children_.emplace_back(src, d); }
+            auto& GetChildren() const { return children_; }
+
+            void Backward() const
+            {
+                for (const auto& c : children_)
+                {
+                    c.first.get().Backward(c.second);
+                }
+            }
+
+            friend auto& operator<<(std::ostream& ofs, const Float32& src)
+            {
+                if (src.d_)
+                {
+                    ofs << src.x_ << " (grad=" << src.d_.value() << ", backward=" << src.last_calculate_ << ")";
+                }
+                else
+                {
+                    ofs << src.x_ << " (grad=None, backward=" << src.last_calculate_ << ")";
+                }
+                return ofs;
+            }
+        };
+
+        template <class T, class U>
+        decltype(auto) Mul(T&& lhs, U&& rhs)
+        {
+            const auto lhsx = typename std::remove_reference_t<T>::ElementType(lhs);
+            const auto rhsx = typename std::remove_reference_t<T>::ElementType(rhs);
+
+            auto t = std::remove_reference_t<T>{lhsx * rhsx, __func__};
+            if constexpr (std::is_lvalue_reference_v<decltype(lhs)>)
+            {
+                t.AddChild(lhs, rhsx);
+            }
+            else
+            {
+                for (const auto& c : lhs.GetChildren())
+                {
+                    t.AddChild(c.first, c.second * rhsx);
+                }
+            }
+
+            if constexpr (std::is_lvalue_reference_v<decltype(rhs)>)
+            {
+                t.AddChild(rhs, lhsx);
+            }
+            else
+            {
+                for (const auto& c : rhs.GetChildren())
+                {
+                    t.AddChild(c.first, c.second * lhsx);
+                }
+            }
+
+            return t;
         }
 
-        void Backward(const T& d_l) const override {}
-    };
-
-    template <class T>
-    class Mul : public Operand<T>
-    {
-    private:
-        const T& term1_;
-        const T& term2_;
-
-    public:
-        explicit Mul(const T& src1, const T& src2) : term1_(src1), term2_(src2) { debug_print("Mul consturctor"); }
-
-        [[nodiscard]] T Forward() const override
+        template <class T, class U>
+        decltype(auto) Add(T&& lhs, U&& rhs)
         {
-            return T{static_cast<typename T::RawValueType>(term1_) * static_cast<typename T::RawValueType>(term2_)};
+            const auto lhsx = typename std::remove_reference_t<T>::ElementType(lhs);
+            const auto rhsx = typename std::remove_reference_t<T>::ElementType(rhs);
+
+            auto t = std::remove_reference_t<T>{lhsx + rhsx, __func__};
+            if constexpr (std::is_lvalue_reference_v<decltype(lhs)>)
+            {
+                t.AddChild(lhs, 1);
+            }
+            else
+            {
+                for (const auto& c : lhs.GetChildren())
+                {
+                    t.AddChild(c.first, c.second);
+                }
+            }
+
+            if constexpr (std::is_lvalue_reference_v<decltype(rhs)>)
+            {
+                t.AddChild(rhs, 1);
+            }
+            else
+            {
+                for (const auto& c : rhs.GetChildren())
+                {
+                    t.AddChild(c.first, c.second);
+                }
+            }
+
+            return t;
         }
 
-        void Backward(const T& d_l) const override {}
-    };
-
-    class Float32
-    {
-    public:
-        using RawValueType = float;
-        explicit operator RawValueType() const noexcept { return x_; }
-
-    private:
-        std::shared_ptr<Operand<Float32>> backward_type_;
-        RawValueType x_;
-
-    public:
-        explicit Float32(float src) : backward_type_(nullptr), x_(src)
+        template <class T, class U>
+        auto operator+(T&& lhs, U&& rhs)
         {
-            debug_print("Float32(float src) consturctor");
+            return Add(std::forward<T>(lhs), std::forward<U>(rhs));
         }
 
-        Float32(const Float32& src) : backward_type_(src.backward_type_), x_(src.x_)
+        template <class T, class U>
+        auto operator*(T&& lhs, U&& rhs)
         {
-            debug_print("Float32(const Float32& src) consturctor");
+            return Mul(std::forward<T>(lhs), std::forward<U>(rhs));
         }
-
-        explicit Float32(const std::shared_ptr<Operand<Float32>>& op)
-            : backward_type_(op), x_(backward_type_->Forward().x_)
-        {
-            debug_print("Float32(Operand<Float32>* op) consturctor");
-        }
-
-        ~Float32() { debug_print("Float32 destructor"); };
-
-        friend auto operator<<(std::ostream& ofs, const Float32& src) -> decltype(ofs)
-        {
-            auto& temp = *src.backward_type_;
-            ofs << src.x_
-                << " (Float32, backward=" << ((src.backward_type_ == nullptr) ? "None" : NAMEOF_SHORT_TYPE_RTTI(temp))
-                << ")";
-            return ofs;
-        }
-
-        [[nodiscard]] auto Detach() const { return Float32{x_}; }
-        [[nodiscard]] auto Clone() const { return Float32{*this}; }
-    };
-
-    template <class T>
-    auto operator+(const T& a, const T& b)
-    {
-        return T{std::make_shared<Add<T>>(a, b)};
-    }
-
-    template <class T>
-    auto operator*(const T& a, const T& b)
-    {
-        return T{std::make_shared<Mul<T>>(a, b)};
-    }
-};  // namespace autograd
+    }  // namespace backprop
+};     // namespace autograd

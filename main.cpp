@@ -1,54 +1,31 @@
 #include <iostream>
-#include <string>
 #include "autograd.hpp"
-#include "tensor.hpp"
 
-class Layer
-{
-private:
-    const std::string name = "Layer";
-
-public:
-    Layer() = default;
-    auto GetLayerName() { return this->name; }
-    virtual void Forward() = 0;
-};
-
-class DenseLayer : public Layer
-{
-private:
-    const std::string name = "DenseLayer";
-
-public:
-    DenseLayer() = default;
-    void Forward() override { std::cout << "DenseLayer: Forward" << std::endl; }
-};
+using autograd::backprop::Float32;
 
 int main()
 {
-    auto tensor = Tensor<float>{3, 2, 4};
-    auto layer = DenseLayer();
-    layer.Forward();
+    auto a = Float32{2};
+    auto b = Float32{3};
+    auto c = Float32{4};
+    auto d = Float32{5};
 
-    auto a = autograd::Float32{1.0};
-    auto b = autograd::Float32{2.0};
-    auto c = autograd::Float32{3.0};
-    auto x = a + b * c;
+    // auto x = a * b + c * d;
+    auto x = 2.0 * 3.0;
 
     std::cout << a << std::endl;
     std::cout << b << std::endl;
     std::cout << c << std::endl;
+    std::cout << d << std::endl;
     std::cout << x << std::endl;
 
-    auto ad = a.Detach();
-    auto ac = a.Clone();
-    auto xd = x.Detach();
-    auto xc = x.Clone();
+    std::cout << "===================" << std::endl;
 
-    std::cout << ad << std::endl;
-    std::cout << ac << std::endl;
-    std::cout << xd << std::endl;
-    std::cout << xc << std::endl;
-
+    // x.Backward();
+    std::cout << a << std::endl;
+    std::cout << b << std::endl;
+    std::cout << c << std::endl;
+    std::cout << d << std::endl;
+    std::cout << x << std::endl;
     return 0;
 }
