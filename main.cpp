@@ -10,8 +10,7 @@ int main()
     auto c = Float32{4};
     auto d = Float32{5};
 
-    // auto x = a * b + c * d;
-    auto x = 2.0 * 3.0;
+    auto x = a * b + c * d;
 
     std::cout << a << std::endl;
     std::cout << b << std::endl;
