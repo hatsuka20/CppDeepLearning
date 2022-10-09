@@ -20,7 +20,7 @@ int main()
 
     std::cout << "===================" << std::endl;
 
-    // x.Backward();
+    x.Backward();
     std::cout << a << std::endl;
     std::cout << b << std::endl;
     std::cout << c << std::endl;
