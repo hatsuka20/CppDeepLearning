@@ -24,7 +24,7 @@ if(CLANG_TIDY OR CLANG_TIDY_FIX)
   endif()
 endif()
 
-project(CppDeeplearning CXX)
+project(DeeplearningPP CXX)
 
 add_subdirectory(lib)
 
@@ -32,7 +32,7 @@ add_executable(main main.cpp)
 target_include_directories(main PUBLIC ${PROJECT_SOURCE_DIR}/lib)
 target_include_directories(
   main PUBLIC ${PROJECT_SOURCE_DIR}/externals/nameof/include)
-target_link_libraries(main CppDeepLearning)
+target_link_libraries(main DeepLearningPP)
 
 enable_testing()
 add_subdirectory(test)
