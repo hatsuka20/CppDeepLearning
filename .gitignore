@@ -1,4 +1,8 @@
-build
-.vscode
-.ccls-cache
-compile_commands.json
+/build
+/.ccls-cache
+/compile_commands.json
+
+.vscode/*
+!.vscode/c_cpp_properties.json
+!.vscode/cmake-kits.json
+!.vscode/cmake-variants.json
