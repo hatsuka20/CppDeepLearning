@@ -1,8 +1,11 @@
 /build
 /.ccls-cache
 /compile_commands.json
+/data
 
 .vscode/*
 !.vscode/c_cpp_properties.json
 !.vscode/cmake-kits.json
 !.vscode/cmake-variants.json
+!.vscode/launch.json
+!.vscode/settings.json

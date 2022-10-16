@@ -3,12 +3,12 @@
         "default": "debug",
         "choices": {
             "debug": {
-                "short": "debug",
+                "short": "Debug",
                 "long": "Emit debug information",
                 "buildType": "Debug"
             },
             "release": {
-                "short": "release",
+                "short": "Release",
                 "long": "Optimize generated code",
                 "buildType": "Release"
             }
