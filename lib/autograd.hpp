@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -72,7 +73,13 @@ namespace autograd
             }
         };
 
-        template <class T, class U>
+        template <class T>
+        concept AutogradType = requires(T& x)
+        {
+            x.GetChildren();
+        };
+
+        template <AutogradType T, AutogradType U>
         decltype(auto) Mul(T&& lhs, U&& rhs)
         {
             const auto lhsx = typename std::remove_reference_t<T>::ElementType(lhs);
@@ -106,7 +113,7 @@ namespace autograd
             return t;
         }
 
-        template <class T, class U>
+        template <AutogradType T, AutogradType U>
         decltype(auto) Add(T&& lhs, U&& rhs)
         {
             const auto lhsx = typename std::remove_reference_t<T>::ElementType(lhs);
@@ -141,15 +148,37 @@ namespace autograd
         }
 
         template <class T, class U>
-        auto operator+(T&& lhs, U&& rhs)
+        constexpr auto operator+(T&& lhs, U&& rhs)
         {
-            return Add(std::forward<T>(lhs), std::forward<U>(rhs));
+            if constexpr (std::is_same_v<T, float>)
+            {
+                return Add(std::remove_reference_t<U>{lhs}, std::forward<U>(rhs));
+            }
+            else if constexpr (std::is_same_v<U, float>)
+            {
+                return Add(std::forward<T>(lhs), std::remove_reference_t<T>{rhs});
+            }
+            else
+            {
+                return Add(std::forward<T>(lhs), std::forward<U>(rhs));
+            }
         }
 
         template <class T, class U>
-        auto operator*(T&& lhs, U&& rhs)
+        constexpr auto operator*(T&& lhs, U&& rhs)
         {
-            return Mul(std::forward<T>(lhs), std::forward<U>(rhs));
+            if constexpr (std::is_same_v<T, float>)
+            {
+                return Mul(std::remove_reference_t<U>{lhs}, std::forward<U>(rhs));
+            }
+            else if constexpr (std::is_same_v<U, float>)
+            {
+                return Mul(std::forward<T>(lhs), std::remove_reference_t<T>{rhs});
+            }
+            else
+            {
+                return Mul(std::forward<T>(lhs), std::forward<U>(rhs));
+            }
         }
     }  // namespace backprop
-};     // namespace autograd
+}  // namespace autograd
