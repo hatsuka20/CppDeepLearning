@@ -12,18 +12,19 @@ namespace autograd
 {
     namespace backprop
     {
-        class Float32
+        template <class Precision>
+        class Float
         {
         public:
-            using ElementType = float;
-            using GradType = float;
+            using ElementType = Precision;
+            using GradType = Precision;
             explicit operator ElementType() const { return x_; }
 
         private:
             ElementType x_;
             mutable std::optional<GradType> d_;
             mutable std::string last_calculate_ = "Leaf";
-            mutable std::vector<std::pair<std::reference_wrapper<const Float32>, GradType>> children_;
+            mutable std::vector<std::pair<std::reference_wrapper<const Float<Precision>>, GradType>> children_;
 
             void Backward(const GradType& dl) const
             {
@@ -35,20 +36,20 @@ namespace autograd
             }
 
         public:
-            Float32() = delete;
-            explicit Float32(const ElementType& x) : x_(x) {}
-            Float32(const ElementType& x, const std::string& last_calculate) : x_(x), last_calculate_(last_calculate) {}
-            Float32(const Float32& src) = default;
-            Float32(Float32&& src) noexcept
+            Float() = delete;
+            explicit Float(const ElementType& x) : x_(x) {}
+            Float(const ElementType& x, const std::string& last_calculate) : x_(x), last_calculate_(last_calculate) {}
+            Float(const Float& src) = default;
+            Float(Float&& src) noexcept
                 : x_(src.x_),
                   d_(src.d_),
                   last_calculate_(std::move(src.last_calculate_)),
                   children_(std::move(src.children_))
             {
             }
-            ~Float32() = default;
+            ~Float() = default;
 
-            void AddChild(const Float32& src, const GradType& d) const { children_.emplace_back(src, d); }
+            void AddChild(const Float& src, const GradType& d) const { children_.emplace_back(src, d); }
             auto& GetChildren() const { return children_; }
 
             void Backward() const
@@ -59,7 +60,7 @@ namespace autograd
                 }
             }
 
-            friend auto& operator<<(std::ostream& ofs, const Float32& src)
+            friend auto& operator<<(std::ostream& ofs, const Float& src)
             {
                 if (src.d_)
                 {
@@ -72,6 +73,9 @@ namespace autograd
                 return ofs;
             }
         };
+
+        using Float32 = Float<float>;
+        using Float64 = Float<double>;
 
         template <class T>
         concept AutogradType = requires(T& x)
@@ -150,11 +154,11 @@ namespace autograd
         template <class T, class U>
         constexpr auto operator+(T&& lhs, U&& rhs)
         {
-            if constexpr (std::is_same_v<T, float>)
+            if constexpr (std::is_floating_point_v<T>)
             {
                 return Add(std::remove_reference_t<U>{lhs}, std::forward<U>(rhs));
             }
-            else if constexpr (std::is_same_v<U, float>)
+            else if constexpr (std::is_floating_point_v<U>)
             {
                 return Add(std::forward<T>(lhs), std::remove_reference_t<T>{rhs});
             }
@@ -167,11 +171,11 @@ namespace autograd
         template <class T, class U>
         constexpr auto operator*(T&& lhs, U&& rhs)
         {
-            if constexpr (std::is_same_v<T, float>)
+            if constexpr (std::is_floating_point_v<T>)
             {
                 return Mul(std::remove_reference_t<U>{lhs}, std::forward<U>(rhs));
             }
-            else if constexpr (std::is_same_v<U, float>)
+            else if constexpr (std::is_floating_point_v<U>)
             {
                 return Mul(std::forward<T>(lhs), std::remove_reference_t<T>{rhs});
             }

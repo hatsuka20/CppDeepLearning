@@ -2,20 +2,17 @@
 #include "autograd.hpp"
 
 using autograd::backprop::Float32;
+using autograd::backprop::Float64;
 
 int main()
 {
-    auto a = Float32{2};
-    auto b = Float32{3};
-    auto c = Float32{4};
-    auto d = Float32{5};
+    const auto a = Float64{2};
+    const auto b = Float64{3};
 
-    auto x = a * b + c * d;
+    const auto x = 5.0 * (4.0 + a) * b;
 
     std::cout << a << std::endl;
     std::cout << b << std::endl;
-    std::cout << c << std::endl;
-    std::cout << d << std::endl;
     std::cout << x << std::endl;
 
     std::cout << "===================" << std::endl;
@@ -23,8 +20,6 @@ int main()
     x.Backward();
     std::cout << a << std::endl;
     std::cout << b << std::endl;
-    std::cout << c << std::endl;
-    std::cout << d << std::endl;
     std::cout << x << std::endl;
     return 0;
 }
