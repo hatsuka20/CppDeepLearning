@@ -80,40 +80,6 @@ namespace autograd
         };
 
         template <AutogradType T, AutogradType U>
-        decltype(auto) Mul(T&& lhs, U&& rhs)
-        {
-            const auto lhsx = typename std::remove_reference_t<T>::ElementType(lhs);
-            const auto rhsx = typename std::remove_reference_t<T>::ElementType(rhs);
-
-            auto t = std::remove_reference_t<T>{lhsx * rhsx, __func__};
-            if constexpr (std::is_lvalue_reference_v<decltype(lhs)>)
-            {
-                t.AddChild(lhs, rhsx);
-            }
-            else
-            {
-                for (const auto& c : lhs.GetChildren())
-                {
-                    t.AddChild(c.first, c.second * rhsx);
-                }
-            }
-
-            if constexpr (std::is_lvalue_reference_v<decltype(rhs)>)
-            {
-                t.AddChild(rhs, lhsx);
-            }
-            else
-            {
-                for (const auto& c : rhs.GetChildren())
-                {
-                    t.AddChild(c.first, c.second * lhsx);
-                }
-            }
-
-            return t;
-        }
-
-        template <AutogradType T, AutogradType U>
         decltype(auto) Add(T&& lhs, U&& rhs)
         {
             const auto lhsx = typename std::remove_reference_t<T>::ElementType(lhs);
@@ -141,6 +107,40 @@ namespace autograd
                 for (const auto& c : rhs.GetChildren())
                 {
                     t.AddChild(c.first, c.second);
+                }
+            }
+
+            return t;
+        }
+
+        template <AutogradType T, AutogradType U>
+        decltype(auto) Mul(T&& lhs, U&& rhs)
+        {
+            const auto lhsx = typename std::remove_reference_t<T>::ElementType(lhs);
+            const auto rhsx = typename std::remove_reference_t<T>::ElementType(rhs);
+
+            auto t = std::remove_reference_t<T>{lhsx * rhsx, __func__};
+            if constexpr (std::is_lvalue_reference_v<decltype(lhs)>)
+            {
+                t.AddChild(lhs, rhsx);
+            }
+            else
+            {
+                for (const auto& c : lhs.GetChildren())
+                {
+                    t.AddChild(c.first, c.second * rhsx);
+                }
+            }
+
+            if constexpr (std::is_lvalue_reference_v<decltype(rhs)>)
+            {
+                t.AddChild(rhs, lhsx);
+            }
+            else
+            {
+                for (const auto& c : rhs.GetChildren())
+                {
+                    t.AddChild(c.first, c.second * lhsx);
                 }
             }
 
